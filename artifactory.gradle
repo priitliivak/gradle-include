@@ -1,0 +1,57 @@
+/**
+ * This requires buildscript dependency to be defined in main build.gradle file.
+ * The snippet defined here will not make the plugin classes available for subprojects.
+ * <pre>
+ * {@code
+ *
+ * buildscript {
+ * 	repositories { jcenter() }
+ * 	dependencies { classpath 'org.jfrog.buildinfo:build-info-extractor-gradle:4.+' }
+ * }
+ *
+ *}
+ *</pre>
+ *
+ * @author Priit Liivak
+ *
+ */
+apply plugin: 'com.jfrog.artifactory'
+apply plugin: 'maven' // Required for pom.xml publishing
+
+// Default values to be overridden
+ext.artifactory_user = project.hasProperty('artifactory_user') ? getProperty('artifactory_user') : ""
+ext.artifactory_password = project.hasProperty('artifactory_password') ? getProperty('artifactory_password') : ""
+
+//println "Artifactory plugin configured to use repo ${artifactory_repository} with user ${artifactory_user}"
+
+artifactory {
+    contextUrl = "${artifactory_url}"
+
+    publish {
+        repository {
+            repoKey = "${artifactory_repository}" //The Artifactory repository key to publish to
+            username = "${artifactory_user}" //The publisher user name
+            password = "${artifactory_password}" //The publisher password
+        }
+        defaults {
+            publishConfigs('archives', 'published')
+            properties = ['build.status': "$it.project.status".toString()]
+            properties = ['build.branch': "$it.project.version".toString()]
+            /*
+             * Publish generated POM files to Artifactory (true by default).
+             * This requires that you apply maven plugin to projects
+             */
+            publishPom = true
+            //Publish generated Ivy descriptor files to Artifactory (true by default)
+            publishIvy = false
+        }
+    }
+    resolve {
+        repository {
+            repoKey = "${artifactory_repository}" //The Artifactory (preferably virtual) repository key to resolve from
+            username = "${artifactory_user}" //Optional resolver user name (leave out to use anonymous resolution)
+            password = "${artifactory_password}" //The resolver password
+            maven = true
+        }
+    }
+}
